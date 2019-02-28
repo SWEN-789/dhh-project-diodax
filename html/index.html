@@ -1,8 +1,12 @@
 {% extends "layout.html" %}
 {% block body %}
-    <ul>
-    {% for item in data %}
-        <li>{{ item }}</li>
-    {% endfor %}
-    </ul>
+
+    <h1>Podcast Transcriber</h1>
+
+    <form method="post" action="/upload" enctype="multipart/form-data">
+        <input type="file" name="ufile" />
+        <input type="submit" />
+    </form>
+
+
 {% endblock %}
