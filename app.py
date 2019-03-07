@@ -2,8 +2,21 @@ import cherrypy
 import os
 import time
 import speech_recognition as sr
+from pydub import AudioSegment
+import math
 from jinja2 import Environment, FileSystemLoader
+
 env = Environment(loader=FileSystemLoader('html'))
+
+
+def split_audio(input_path, output_path):
+    """
+    Method used to split the .WAV file into multiple 30sec chunks, circumventing Google's API limitation
+    """
+    audio_file = AudioSegment.from_wav(input_path)
+    for i, chunk in enumerate(audio_file[::30 * 1000]):
+        chunk.export(output_path + "/out{:>08d}.wav".format(i), format="wav")
+    return audio_file.duration_seconds
 
 
 class Root(object):
@@ -13,9 +26,45 @@ class Root(object):
         return tmpl.render()
 
     @cherrypy.expose
+    def result(self):
+        # TODO: This is just for testing the results view, remove later
+        tmpl = env.get_template('result.html')
+        result_text = [("00:00:00", "this Dynamic Workshop aims to provide up-to-date information on pharmacological "
+                                    "approaches, issues, and treatment in the geriatric population to assist in "
+                                    "preventing "
+                                    "medication-related problems, appropriately and effectively managing medications "
+                                    "and "
+                                    "compliance. The concept of polypharmacy parentheses taking multiple types of "
+                                    "drugs "
+                                    "parentheses will also be discussed, as"),
+                       ("00:00:30", "is a common issue that can "
+                                    "impact adverse side effects "
+                                    "in the geriatric population. "
+                                    "Participants will leave with "
+                                    "a knowledge and "
+                                    "considerations of common drug "
+                                    "interactions and how to "
+                                    "minimize effects that limit "
+                                    "function. Summit professional "
+                                    "education is approved "
+                                    "provider of continuing "
+                                    "education. This course is "
+                                    "offered for 6"), ("00:01:00",
+                                                       "it's. "
+                                                       "Discourse "
+                                                       "contains "
+                                                       "content "
+                                                       "classified "
+                                                       "under both "
+                                                       "the domain "
+                                                       "of "
+                                                       "occupational therapy and professional issues.")]
+        return tmpl.render(message=result_text, length="00:01:10")
+
+    @cherrypy.expose
     def upload(self, ufile):
         # Save the file to the directory where app.py is:
-        upload_path = os.path.dirname(__file__)
+        upload_path = os.path.dirname(__file__) + '/uploads'
 
         # Save the file using the filename sent by the client, with an added timestamp:
         timestamp = time.strftime("%Y%m%d-%H%M%S")
@@ -39,16 +88,49 @@ class Root(object):
         '''.format(upload_filename, size, ufile.content_type, data)
         cherrypy.log(upload_success)
 
+        audio_length = split_audio('uploads/' + upload_filename, 'parts')
+
         # Now that we have the file saved on the disk, proceed to do the speech processing
         # use the audio file as the audio source
         # audio file should be in the .wav format
         r = sr.Recognizer()
-        with sr.AudioFile(upload_filename) as source:
-            audio = r.record(source)  # read the entire audio file
-            result_text = r.recognize_google(audio)
+        files = sorted(os.listdir('parts/'))
+        all_text = []
+
+        for f in files:
+            name = "parts/" + f
+            # Load audio file
+            with sr.AudioFile(name) as source:
+                audio = r.record(source)  # read the segment of the audio file
+            # Transcribe audio file
+            text = r.recognize_google(audio)
+            all_text.append(text)
+
+        # Remove the file(s) after use
+        os.remove(upload_file)
+
+        for filename in os.listdir(os.path.dirname(__file__) + '/parts'):
+            os.remove(os.path.normpath(os.path.join(os.path.dirname(__file__) + '/parts', filename)))
+
+        # Prepare the transcript
+        transcript = []
+        for i, t in enumerate(all_text):
+            total_seconds = i * 30
+            # Method to get hours, minutes and seconds
+            m, s = divmod(total_seconds, 60)
+            h, m = divmod(m, 60)
+
+            # Format time as h:m:s - 30 seconds of text
+            segment = ("{:0>2d}:{:0>2d}:{:0>2d}".format(h, m, s), t)
+            transcript.append(segment)
+
+        # Prepare the audio length timestamp
+        m, s = divmod(int(audio_length), 60)
+        h, m = divmod(m, 60)
+        length_string = "{:0>2d}:{:0>2d}:{:0>2d}".format(h, m, s)
 
         tmpl = env.get_template('result.html')
-        return tmpl.render(message=result_text)
+        return tmpl.render(message=transcript, length=length_string)
 
 
 if __name__ == '__main__':

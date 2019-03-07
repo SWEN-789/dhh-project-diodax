@@ -1,12 +1,45 @@
 {% extends "layout.html" %}
 {% block body %}
 
-    <h1>Podcast Transcriber</h1>
-
-    <form method="post" action="/upload" enctype="multipart/form-data">
-        <input type="file" name="ufile" />
-        <input type="submit" />
-    </form>
+    <section class="jumbotron text-center">
+        <div class="container">
+        <h1 class="jumbotron-heading">Podcast Transcriber</h1>
+        <p class="lead text-muted">Upload a audio file to receive a transcript of the document. Supported file formats are .WAV and .MP3</p>
 
 
+        <br/>
+            <p>
+            <!--<a href="#" class="btn btn-primary my-2">Main call to action</a>-->
+            <!--<a href="#" class="btn btn-secondary my-2">Secondary action</a>-->
+        </p>
+
+            <form method="post" action="/upload" enctype="multipart/form-data">
+
+                <div class="input-group">
+              <div class="custom-file">
+                <input type="file" class="custom-file-input" id="ufile" aria-describedby="ufile" name="ufile">
+                <label class="custom-file-label" for="ufile">Choose file</label>
+              </div>
+              <div class="input-group-append">
+                  <input class="btn btn-primary" type="submit" value="Upload"/>
+              </div>
+            </div>
+
+            </form>
+        </div>
+    </section>
+{% endblock %}
+
+{% block javascript %}
+    <script type="text/javascript">
+        $( document ).ready(function() {
+            // Used to show the name of the chosen file
+            $('#ufile').on('change',function(){
+                //get the file name
+                var fileName = $(this).val().replace('C:\\fakepath\\', " ");
+                //replace the "Choose a file" label
+                $(this).next('.custom-file-label').html(fileName);
+            })
+        });
+    </script>
 {% endblock %}
