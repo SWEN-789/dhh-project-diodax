@@ -3,7 +3,6 @@ import os
 import time
 import speech_recognition as sr
 from pydub import AudioSegment
-import math
 from jinja2 import Environment, FileSystemLoader
 
 env = Environment(loader=FileSystemLoader('html'))
@@ -24,42 +23,6 @@ class Root(object):
     def index(self):
         tmpl = env.get_template('index.html')
         return tmpl.render()
-
-    @cherrypy.expose
-    def result(self):
-        # TODO: This is just for testing the results view, remove later
-        tmpl = env.get_template('result.html')
-        result_text = [("00:00:00", "this Dynamic Workshop aims to provide up-to-date information on pharmacological "
-                                    "approaches, issues, and treatment in the geriatric population to assist in "
-                                    "preventing "
-                                    "medication-related problems, appropriately and effectively managing medications "
-                                    "and "
-                                    "compliance. The concept of polypharmacy parentheses taking multiple types of "
-                                    "drugs "
-                                    "parentheses will also be discussed, as"),
-                       ("00:00:30", "is a common issue that can "
-                                    "impact adverse side effects "
-                                    "in the geriatric population. "
-                                    "Participants will leave with "
-                                    "a knowledge and "
-                                    "considerations of common drug "
-                                    "interactions and how to "
-                                    "minimize effects that limit "
-                                    "function. Summit professional "
-                                    "education is approved "
-                                    "provider of continuing "
-                                    "education. This course is "
-                                    "offered for 6"), ("00:01:00",
-                                                       "it's. "
-                                                       "Discourse "
-                                                       "contains "
-                                                       "content "
-                                                       "classified "
-                                                       "under both "
-                                                       "the domain "
-                                                       "of "
-                                                       "occupational therapy and professional issues.")]
-        return tmpl.render(message=result_text, length="00:01:10")
 
     @cherrypy.expose
     def upload(self, ufile):
@@ -98,19 +61,21 @@ class Root(object):
         all_text = []
 
         for f in files:
-            name = "parts/" + f
-            # Load audio file
-            with sr.AudioFile(name) as source:
-                audio = r.record(source)  # read the segment of the audio file
-            # Transcribe audio file
-            text = r.recognize_google(audio)
-            all_text.append(text)
+            if f.endswith(".wav"):
+                name = "parts/" + f
+                # Load audio file
+                with sr.AudioFile(name) as source:
+                    audio = r.record(source)  # read the segment of the audio file
+                # Transcribe audio file
+                text = r.recognize_google(audio)
+                all_text.append(text)
 
         # Remove the file(s) after use
         os.remove(upload_file)
 
         for filename in os.listdir(os.path.dirname(__file__) + '/parts'):
-            os.remove(os.path.normpath(os.path.join(os.path.dirname(__file__) + '/parts', filename)))
+            if filename.endswith('.wav'):
+                os.remove(os.path.normpath(os.path.join(os.path.dirname(__file__) + '/parts', filename)))
 
         # Prepare the transcript
         transcript = []
