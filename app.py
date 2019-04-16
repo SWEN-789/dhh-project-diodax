@@ -27,7 +27,7 @@ class Root(object):
     @cherrypy.expose
     def upload(self, ufile):
         # Save the file to the directory where app.py is:
-        upload_path = os.path.dirname(__file__) + '/uploads'
+        upload_path = os.path.dirname(os.path.abspath(__file__)) + '/uploads'
 
         # Save the file using the filename sent by the client, with an added timestamp:
         timestamp = time.strftime("%Y%m%d-%H%M%S")
@@ -73,9 +73,9 @@ class Root(object):
         # Remove the file(s) after use
         os.remove(upload_file)
 
-        for filename in os.listdir(os.path.dirname(__file__) + '/parts'):
+        for filename in os.listdir(os.path.dirname(os.path.abspath(__file__)) + '/parts'):
             if filename.endswith('.wav'):
-                os.remove(os.path.normpath(os.path.join(os.path.dirname(__file__) + '/parts', filename)))
+                os.remove(os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)) + '/parts', filename)))
 
         # Prepare the transcript
         transcript = []
